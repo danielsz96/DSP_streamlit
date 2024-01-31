@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from pymongo import MongoClient
 from streamlit_option_menu import option_menu
 from pandas.api.types import (
     is_categorical_dtype,
@@ -14,7 +13,7 @@ import time
 
 @st.cache_data
 def load_data():
-    data = pd.read_json('data_senti.json')
+    data = pd.read_json('/mount/src/dsp_streamlit/streamlit_app/data_senti.json')
     # data['Date'] = pd.to_datetime(data['Date'])  # Convert 'Date' column to datetime objects
     return data
 
