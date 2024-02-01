@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 from pandas.api.types import (
     is_categorical_dtype,
@@ -9,16 +10,36 @@ from pandas.api.types import (
     is_object_dtype,
 )
 import time
+import json
+
+
+
+
 
 
 @st.cache_data
 def load_data():
-    data = pd.read_json('/mount/src/dsp_streamlit/streamlit_app/data_senti.json')
+    data = pd.read_json('data_senti.json')
     # data['Date'] = pd.to_datetime(data['Date'])  # Convert 'Date' column to datetime objects
     return data
 
-df = load_data()
 
+@st.cache_data
+def load_drug_descriptions():
+    with open('drug_descriptions.json', 'r') as file:
+        drug_descriptions = json.load(file)
+    return drug_descriptions
+
+@st.cache_data
+def load_drug_dictionary():
+    with open('drug_dictionary.json', 'r') as file:
+        drug_dictionary = json.load(file)
+    return drug_dictionary
+
+
+df = load_data()
+drug_descriptions = load_drug_descriptions()
+drug_dictionary = load_drug_dictionary()
 
 if 'clicked' not in st.session_state:
     st.session_state.clicked = False
@@ -115,26 +136,39 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 with st.sidebar:
-    menu = option_menu("Main Menu", ['Drug Encyclopedia', 'Sentiment Analysis', 'Map', 'Popular Drugs Ranking', 'Train model', 'Update drug dictionary', 'Inspect Data'], 
-    icons=['book', 'emoji-smile-upside-down', 'map-fill', 'info', 'info', 'info',  'clipboard2-data-fill'], menu_icon="cast", default_index=1)
+    menu = option_menu("Main Menu", ['Drug Encyclopedia', 'Sentiment Analysis', 'Map', 'Popular Drugs Ranking', 'Train model', 'Update drug dictionary', 'Inspect Data', 'Info'], 
+    icons=['book', 'emoji-smile-upside-down', 'map-fill', 'sort-down', 'cpu', 'book',  'clipboard2-data-fill', 'info'], menu_icon="cast", default_index=1)
 
 
 
 
 if menu == 'Drug Encyclopedia':
+
     st.title('Drug Encyclopedia')
-    st.write('Choose a drug from the dropdown menu to see its description')
-    selection = st.selectbox('Choose a drug', options=df['Identified Drug Type'].unique())
+    selection = st.selectbox('Choose a drug from the dropdown menu to see its description', options=df['Identified Drug Type'].unique())
     # Placeholder for drug information
-    if selection == 'Cocaine':
-        st.write("Cocaine is a tropane alkaloid that acts as a central nervous system stimulant. As an extract, it is mainly used recreationally, and often illegally for its euphoric and rewarding effects. Wikipedia")
+    st.markdown(f'## {selection}')
+    st.markdown('---')
+    st.write(drug_descriptions[selection])
+    st.markdown('---')
+    st.write('## Street names')
+    keys_with_value = [key for key, value in drug_dictionary.items() if value == selection]
+    st.write(str(keys_with_value))
 
 elif menu == 'Sentiment Analysis':
     st.title('Sentiment Analysis per Drug')
     drug_choice = st.selectbox('Choose a drug', options=df['Identified Drug Type'].unique())
     filtered_data = df[df['Identified Drug Type'] == drug_choice]
+    filtered_data = filtered_data.sort_values('Sentiment')
     fig = px.bar(filtered_data, x='Sentiment', y='Upvotes', color='Sentiment')
+    fig.update_layout(yaxis_title='Upvotes x Sentiment', xaxis_title='Sentiment')
     st.plotly_chart(fig)
+
+    sentiment_data = filtered_data.groupby('Date')['Sentiment_class'].mean().reset_index()
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=sentiment_data['Date'], y=sentiment_data['Sentiment_class'], name='Sentiment'))
+    fig2.update_layout(title='Mean sentiment over time', xaxis_title='Date', yaxis_title='Sentiment')
+    st.plotly_chart(fig2)
 
 
 elif menu == 'Map':
@@ -148,7 +182,9 @@ elif menu == 'Map':
 elif menu == 'Popular Drugs Ranking':
     st.title('Popular Drugs Ranking')
     drug_count = df['Identified Drug Type'].value_counts().head(10)  # Show top 10
-    st.bar_chart(drug_count)
+    fig = go.Figure(data=[go.Bar(x=drug_count.index, y=drug_count.values)])
+    fig.update_layout(title='Ranking by mentions', xaxis_title='Drug Type', yaxis_title='Mention count')
+    st.plotly_chart(fig)
     # st.dataframe(filter_dataframe(df))
 
 
@@ -194,6 +230,23 @@ elif menu == 'Update drug dictionary':
 elif menu == 'Inspect Data':
     st.title('Inspect Data')
     st.dataframe(filter_dataframe(df))
+
+
+elif menu == 'Info':
+    st.title('Info')
+    st.markdown('---')
+    st.write('## Dataflow')
+    st.image('flow.png')
+    st.markdown('---')
+    st.write('## Model info')
+    st.write('''
+            ### Named entity recognition: 
+             [bert-base-uncased] finetuned on Reddit posts - annotated with RegEx
+
+
+            ### Sentiment analysis:
+             [cardiffnlp/twitter-roberta-base-sentiment]
+             ''')
 
 
 # Additional functionalities as per your dataset structure and requirements
