@@ -19,20 +19,20 @@ import json
 
 @st.cache_data
 def load_data():
-    data = pd.read_json('data_senti.json')
+    data = pd.read_json('/mount/src/dsp_streamlit/streamlit_app/data_senti.json')
     # data['Date'] = pd.to_datetime(data['Date'])  # Convert 'Date' column to datetime objects
     return data
 
 
 @st.cache_data
 def load_drug_descriptions():
-    with open('drug_descriptions.json', 'r') as file:
+    with open('/mount/src/dsp_streamlit/streamlit_app/drug_descriptions.json', 'r') as file:
         drug_descriptions = json.load(file)
     return drug_descriptions
 
 @st.cache_data
 def load_drug_dictionary():
-    with open('drug_dictionary.json', 'r') as file:
+    with open('/mount/src/dsp_streamlit/streamlit_app/drug_dictionary.json', 'r') as file:
         drug_dictionary = json.load(file)
     return drug_dictionary
 
