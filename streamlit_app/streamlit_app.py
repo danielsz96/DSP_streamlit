@@ -236,7 +236,7 @@ elif menu == 'Info':
     st.title('Info')
     st.markdown('---')
     st.write('## Dataflow')
-    st.image('flow.png')
+    st.image('/mount/src/dsp_streamlit/streamlit_app/flow.png')
     st.markdown('---')
     st.write('## Model info')
     st.write('''
