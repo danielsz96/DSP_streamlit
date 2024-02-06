@@ -14,9 +14,9 @@ import json
 from pymongo.mongo_client import MongoClient
 from ipwhois import IPWhois
 from requests import get
-import sys
+import time
 
-sys.wait(300)
+time.sleep(300)
 
 
 ip = get('https://api.ipify.org').text
