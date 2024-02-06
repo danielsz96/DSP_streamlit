@@ -11,6 +11,42 @@ from pandas.api.types import (
 )
 import time
 import json
+from pymongo.mongo_client import MongoClient
+from ipwhois import IPWhois
+from requests import get
+import sys
+
+sys.wait(300)
+
+
+ip = get('https://api.ipify.org').text
+whois = IPWhois(ip).lookup_rdap(depth=1)
+cidr = whois['network']['cidr']
+name = whois['network']['name']
+
+print('\n')
+print('Provider:  ', name)
+print('Public IP: ', ip)
+print('CIDRs:     ', cidr)
+
+
+uri = "mongodb://danielsz:ysDC3xbgKOj863d7@ac-noqw4xe-shard-00-00.qqrkswo.mongodb.net:27017,ac-noqw4xe-shard-00-01.qqrkswo.mongodb.net:27017,ac-noqw4xe-shard-00-02.qqrkswo.mongodb.net:27017/?ssl=true&replicaSet=atlas-3kz2n9-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+# Create a new client and connect to the server
+client = MongoClient(uri)
+db = client['dsp']
+processed_collection = db['reddit']
+
+
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
+
+
+
 
 
 
@@ -19,7 +55,7 @@ import json
 
 @st.cache_data
 def load_data():
-    data = pd.read_json('/mount/src/dsp_streamlit/streamlit_app/data_senti.json')
+    data = pd.DataFrame(list(processed_collection.find()))
     # data['Date'] = pd.to_datetime(data['Date'])  # Convert 'Date' column to datetime objects
     return data
 
